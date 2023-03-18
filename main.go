@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
 	"time"
 
@@ -35,20 +34,37 @@ func main() {
 		}
 	}()
 
-	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		panic(err)
-	}
-	//// Send a ping to confirm a successful connection
-	//var result bson.M
-	//if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result); err != nil {
-	//	panic(err)
-	//}
-	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
-
-	databases, err := client.ListDatabases(context.TODO(), bson.M{})
+	quickStartDB := client.Database("quickstart")
+	podcastCollection := quickStartDB.Collection("podcasts")
+	podcastResult, err := podcastCollection.InsertOne(ctx, bson.D{
+		{Key: "title", Value: "The polyglot developer"},
+		{Key: "author", Value: "Piyush"},
+		{Key: "tags", Value: bson.A{"development", "programming", "coding"}},
+	})
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
-	fmt.Printf("List of databases in your cluster: %v\n", databases)
+	fmt.Println(podcastResult.InsertedID)
+
+	episodesCollection := quickStartDB.Collection("episodes")
+	episodeResult, err := episodesCollection.InsertMany(ctx, []interface{}{
+		bson.D{
+			{"podcast", podcastResult.InsertedID},
+			{"title", "Episode #1"},
+			{"description", "This is the first episode"},
+			{"duration", 25},
+		},
+		bson.D{
+			{"podcast", podcastResult.InsertedID},
+			{"title", "Episode #2"},
+			{"description", "This is the second episode"},
+			{"duration", 32},
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(episodeResult.InsertedIDs)
 }
