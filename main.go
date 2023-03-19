@@ -34,94 +34,17 @@ func main() {
 		}
 	}()
 
-	quickStartDB := client.Database("quickstart")
-	podcastCollection := quickStartDB.Collection("podcasts")
-	//podcastResult, err := podcastCollection.InsertOne(ctx, bson.D{
-	//	{Key: "title", Value: "The polyglot developer"},
-	//	{Key: "author", Value: "Piyush"},
-	//	{Key: "tags", Value: bson.A{"development", "programming", "coding"}},
-	//})
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//fmt.Println(podcastResult.InsertedID)
-	//
-	episodesCollection := quickStartDB.Collection("episodes")
-	//episodeResult, err := episodesCollection.InsertMany(ctx, []interface{}{
-	//	bson.D{
-	//		{"podcast", podcastResult.InsertedID},
-	//		{"title", "Episode #1"},
-	//		{"description", "This is the first episode"},
-	//		{"duration", 25},
-	//	},
-	//	bson.D{
-	//		{"podcast", podcastResult.InsertedID},
-	//		{"title", "Episode #2"},
-	//		{"description", "This is the second episode"},
-	//		{"duration", 32},
-	//	},
-	//})
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//fmt.Println(episodeResult.InsertedIDs)
+	// Send a ping to confirm a successful connection
+	var result bson.M
+	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result); err != nil {
+		panic(err)
+	}
+	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
-	//cursor, err := episodesCollection.Find(ctx, bson.M{})
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//var episodes []bson.M
-	//if err = cursor.All(ctx, &episodes); err != nil {
-	//	log.Fatal(err)
-	//}
-	//fmt.Println(episodes)
-
-	// Get all the elements of episodes collection
-	cursor, err := episodesCollection.Find(ctx, bson.M{})
+	databases, err := client.ListDatabases(context.TODO(), bson.M{})
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer cursor.Close(ctx)
-	for cursor.Next(ctx) {
-		var episode bson.M
-		if err = cursor.Decode(&episode); err != nil {
-			log.Fatal(err)
-		}
-		//fmt.Println(episode)
+		log.Fatalln(err)
 	}
 
-	// Get one element of PodCase collection
-	var podcast bson.M
-	if err = podcastCollection.FindOne(ctx, bson.M{}).Decode(&podcast); err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Println(podcast)
-
-	// Get episodes whose duration == 25
-	filterCursor, err := episodesCollection.Find(ctx, bson.M{"duration": 25})
-	if err != nil {
-		log.Fatal(err)
-	}
-	var episodesFiltered []bson.M
-	if err = filterCursor.All(ctx, &episodesFiltered); err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Println(episodesFiltered)
-
-	// sort episodes and filter it based on the duration field
-	opt := options.Find()
-	opt.SetSort(bson.D{{"duration", 1}})
-	sortCursor, err := episodesCollection.Find(ctx, bson.D{
-		{"duration", bson.D{
-			{"$gt", 24},
-		}},
-	}, opt)
-
-	var episodesSorted []bson.M
-	if err = sortCursor.All(ctx, &episodesSorted); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(episodesSorted)
+	fmt.Printf("List of databases in your cluster: %v\n", databases)
 }
